@@ -17,6 +17,7 @@ const { getTruffleContract } = require("@uma/core");
 const { ExpressionPriceFeed, math, escapeSpecialCharacters } = require("./ExpressionPriceFeed");
 const { VaultPriceFeed } = require("./VaultPriceFeed");
 const { LPPriceFeed } = require("./LPPriceFeed");
+const { RaiPriceFeed } = require("./RaiPriceFeed");
 const { BlockFinder } = require("./utils");
 const { getPrecisionForIdentifier } = require("@uma/common");
 
@@ -28,6 +29,7 @@ async function createPriceFeed(logger, web3, networker, getTime, config) {
   const ERC20 = getTruffleContract("ExpandedERC20", web3, "latest");
   const Balancer = getTruffleContract("Balancer", web3, "latest");
   const VaultInterface = getTruffleContract("VaultInterface", web3, "latest");
+  const RaiInterface = getTruffleContract("RaiInterface", web3, "latest");
 
   if (config.type === "cryptowatch") {
     const requiredFields = ["exchange", "pair", "lookback", "minTimeBetweenUpdates"];
@@ -358,6 +360,28 @@ async function createPriceFeed(logger, web3, networker, getTime, config) {
       web3,
       getTime,
       erc20Abi: ERC20.abi,
+      blockFinder: getSharedBlockFinder(web3)
+    });
+  } else if (config.type === "rai") {
+    const requiredFields = ["address"];
+    if (isMissingField(config, requiredFields, logger)) {
+      return null;
+    }
+
+    logger.debug({
+      at: "createPriceFeed",
+      message: "Creating RaiPriceFeed",
+      config
+    });
+
+    return new RaiPriceFeed({
+      ...config,
+      logger,
+      web3,
+      getTime,
+      RaiAbi: RaiInterface.abi,
+      erc20Abi: ERC20.abi,
+      RaiAddress: config.address,
       blockFinder: getSharedBlockFinder(web3)
     });
   }
